@@ -1,0 +1,98 @@
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<dom-module id="ws-userevents">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+    </style>
+
+      <ws-userdata 
+                   id="userdata"
+                   user="{{user}}" 
+                   token="{{token}}"
+                   location="https://shining-fire-1777.firebaseio.com"
+                   favorites="{{favorites}}"
+                   on-favorites-changed="favoritesChanged"
+                   on-removed="removedFavorite">
+      </ws-userdata>
+
+
+      <!--<iron-ajax auto url="https://api.cilabs.net/v1/conferences/ws15/timeslots" last-response="{{events}}"></iron-ajax>-->
+      <ws-retrieveevents events="{{events}}"></ws-retrieveevents>
+
+      <template is="dom-if" if="{{user}}">
+          <paper-button raised on-tap="logout"> Logout </paper-button>
+      </template>
+      <template is="dom-if" if="{{!user}}">
+      <paper-button raised on-tap="login"> Login to save your favorite events </paper-button>       
+      </template>
+
+
+      <ws-eventlist class="flex vertical layout" id="eventslist" events="{{events}}" favorites="{{favorites}}" on-toggle-favorite="_toggleFavorite"></ws-eventlist>
+
+      <paper-toast id="notloggedin"
+                 duration="6000"
+                 text="Please login if you wish to add favorites">
+                 <!--<paper-button on-tap="login"> Login </paper-button>-->
+                 <span role="button" style="color: #eeff41;margin: 10px" on-tap="login">LOGIN</span>
+    </paper-toast>
+
+  </template>
+  <script>
+  (function() {
+    'use strict';
+
+    Polymer({
+      is: 'ws-userevents',
+
+      properties: {
+        token: {
+          type: Object,
+          notify: true
+        },
+        favorites: {
+          notify: true
+        }
+      },
+
+      login : function() {
+        this.$.userdata.login();
+      },
+
+      logout : function() {
+        this.$.userdata.logout();
+      },
+
+      favoritesChanged : function(){
+        this.$.eventslist.updateFavorites();
+      },
+
+      removedFavorite : function(favorite) {
+        this.$.eventslist.updateFavorite(favorite.detail);
+      },
+
+      _toggleFavorite : function(e) {
+          if(!this.user) {
+            this.$.notloggedin.show();
+          } else {
+            this.$.userdata.toggleFavorite(e.detail);
+          }
+      }
+
+
+    });
+  })();
+  </script>
+</dom-module>

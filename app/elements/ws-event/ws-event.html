@@ -1,0 +1,194 @@
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<dom-module id="ws-event">
+  <template>
+    <style>
+      :host {
+        display: block;
+        margin: 30px 16px 10px;
+      }
+
+      iron-image {
+        background-color: lightgray;
+      }
+
+      paper-item-body {
+        margin: 2px 20px;
+        }
+
+      .title {
+        font-size: large;
+        font-weight: 500;
+        transition: color .1s;
+      }
+
+      .location {
+        font-size: small;
+        color: #666;
+      }
+
+      .description {
+        font-size: small;
+        color: #999; 
+      }
+
+      .date {
+        font-size: small;
+        color: #AAA;
+        float: right;
+      }
+
+      .card-actions > * > paper-button {
+        font-size:small;
+        color: #999;
+      }
+
+      .fvt > paper-button {
+        transition: color .1s;
+      }
+
+
+
+      .title[data-active] {
+        color: #EE3268;
+        transition: color .1s;
+      }
+
+      .fvt > paper-button[active] {
+        color: #EE3268;
+        transition: color .1s;
+      }
+
+      .info {
+        margin-left : 20px;
+      }
+
+      .title, .description, .details {
+        margin : 5px;
+      }
+
+      paper-card {
+        width: 100%;
+      }
+    
+
+    </style>
+
+    
+
+    <paper-card toggles active="{{active}}">
+
+      <div class="card-content">
+        <div class="layout horizontal center">
+
+          <div class="avatar"><iron-image height="56" width="56" sizing="contain" preload src="{{data.speakers.0.avatar_url}}" ></iron-image></div>
+        
+          <div class="info flex">
+              <div class="wrap layout vertical">
+                
+                <div class="title" data-active$="{{active}}">{{data.title}}</div>
+                
+                <div class="description">{{data.description}}</div>
+                
+                <div class="wrap layout horizontal end details">
+                  <div class="flex"><span class="location">Location: </span><span class="location">{{data.location.name}}</span></div>
+                  <div><span class="date">{{data.start_time}}</span></div>
+                </div>
+
+            </div>
+          
+        </div>
+        </div>
+
+  </div>
+
+      <div class="card-actions horizontal layout">
+        <div class="fvt">
+          <paper-button active="{{active}}" on-tap="_handleTap">
+              <iron-icon icon="grade"></iron-icon> Favorite
+          </paper-button>
+          <!--<paper-icon-button icon="stars" active="{{active}}" on-tap="_handleTap"><span>Favorite</span></paper-icon-button>-->
+        </div>
+
+        <div class="flex" id="whitespace"></div>
+        <div>
+          <paper-button on-tap="selectEvent">
+              <iron-icon icon="info-outline"></iron-icon> Details
+          </paper-button>
+          <!--<paper-icon-button icon="stars" active="{{active}}" on-tap="_handleTap"><span>Favorite</span></paper-icon-button>-->
+        </div>
+      </div>
+      
+    
+
+    </paper-card>
+    
+  </template>
+  <script>
+  (function() {
+    'use strict';
+
+    Polymer({
+      is: 'ws-event',
+
+      properties: {
+        data: {
+          type: Object,
+          notify: true
+        },
+        favorites: {
+          notify: true
+        },
+        lastUpdate: {
+          type: Date,
+          notify: false,
+          value: new Date()
+        },
+        active: {
+          type: Boolean,
+          notify: true,
+          computed: 'isInFavorite(data, favorites, lastUpdate)'
+        }
+      },
+
+
+      selectEvent : function() {
+
+        this.fire('select-event', this.data);
+      },
+      
+      updateStatus: function() {
+        //console.log("· updating " + this.data.id);
+        //console.log("· favorites: " + JSON.stringify(this.favorites));
+        this.lastUpdate = new Date();
+      },
+
+      isInFavorite: function(data) {
+        var id = data.id;
+        return (this.favorites||[]).filter(function(each){return each.id === id; }).length > 0;
+      },
+
+      _handleTap: function(){
+
+        if (this.favorites === undefined) {
+          console.log('favorites not loaded!');
+          return;
+        }
+
+        this.fire('toggle-favorite', {id: this.data.id});
+        this.lastUpdate = new Date();
+      }
+    });
+  })();
+  </script>
+</dom-module>

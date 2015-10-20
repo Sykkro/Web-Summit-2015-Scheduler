@@ -1,0 +1,317 @@
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<dom-module id="ws-eventlist">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+
+      .favs {
+        padding-bottom: 15px;
+      }
+
+      .filters > div {
+        margin-left: 15px;
+        margin-right: 15px;
+      }
+
+      .eventslist {
+        max-height: 100%;
+      }
+
+      .noevents {
+        font-weight: 600;
+        color: 888;
+        font-size: medium;
+        margin-top: 20px;
+      }
+
+    </style>
+
+
+        <!-- Filters -->
+        <div class="wrap layout horizontal end filters">
+
+
+          
+
+        <!--<div class="flex">
+        <h3 class="right">Events to display:</h3>
+        </div>-->
+          
+          <!-- Favs only filter -->
+          <div class="favs">
+          <paper-toggle-button checked="{{favsonly}}">
+            <span>Only favorites</span>
+          </paper-toggle-button>
+          </div>
+
+          <!-- Days filter -->
+          <div>
+          <paper-dropdown-menu>
+            <paper-menu attr-for-selected="value" selected="{{days}}" class="dropdown-content">
+              <paper-item value="all">All days</paper-item>
+              <paper-item value="3">Nov. 3rd</paper-item>
+              <paper-item value="4">Nov. 4th</paper-item>
+              <paper-item value="5">Nov. 5th</paper-item>
+            </paper-menu>
+          </paper-dropdown-menu>
+          </div>
+
+          <!-- Part filter -->
+          <div>
+          <paper-dropdown-menu>
+            <paper-menu attr-for-selected="value" selected="{{part}}" class="dropdown-content">
+              <paper-item value="all">All day</paper-item>
+              <paper-item value="morning">Morning</paper-item>
+              <paper-item value="afternoon">Afternoon</paper-item>
+            </paper-menu>
+          </paper-dropdown-menu>
+          </div>
+
+          <!-- Location filter -->
+          <div>
+          <paper-dropdown-menu>
+            <paper-menu attr-for-selected="value" selected="{{location}}" class="dropdown-content">
+              <paper-item value="all">All locations</paper-item>
+              <template is="dom-repeat" items="{{locations(events)}}">
+                <paper-item value="{{item}}">{{item}}</paper-item>
+              </template>
+            </paper-menu>
+          </paper-dropdown-menu>
+          </div>
+
+
+          <div class="flex"></div>
+          <!-- Clear filters -->
+          <template is="dom-if" if="{{filtersApplied}}">
+            <div>
+              <paper-button raised on-tap="clearFilters">
+              <iron-icon icon="clear"></iron-icon> Remove filters
+              </paper-button>
+            </div>
+          </template>
+
+        </div>
+
+
+        <paper-dialog style="background:white" id="dialog" with-backdrop="true" autoFitOnAttach="true">
+        
+          <h1>{{selectedEvent.title}}</h1>
+         
+          <paper-dialog-scrollable>
+            <ws-eventinfo event="{{selectedEvent}}"></ws-eventinfo>
+
+          </paper-dialog-scrollable>
+
+          <div class="buttons">
+            <paper-button dialog-dismiss>Close</paper-button>
+          </div>
+        </paper-dialog>
+
+        <div class="layout horizontal">
+          <div class="flex"></div>
+
+            <div>
+              <paper-spinner active="{{loadingEvents}}"></paper-spinner>
+
+              <template is="dom-if" if="{{_isEmpty(filteredEvents)}}">
+                <div class="noevents">
+                  <span>No events to display.</span>  
+                </div>
+              </template>
+            </div>
+
+            <div class="flex"></div>
+        </div>
+
+        <iron-list class="flex vertical layout eventslist" items="{{filteredEvents}}" as="item">
+          <template>
+              <div>
+                <ws-event id="{{idFor(item.id)}}" data="{{item}}" favorites="{{favorites}}" on-select-event="showInfo"></ws-event>
+              </div>
+          </template>
+        </iron-list>
+
+  
+
+        <!--<template is="dom-repeat" items="{{filtered(events, favsonly, days, location, part)}}">
+          <ws-event id="{{idFor(item.id)}}" data="{{item}}" favorites="{{favorites}}"></ws-event>
+
+        </template>-->
+
+  </template>
+  <script>
+  (function() {
+    'use strict';
+
+    Polymer({
+      is: 'ws-eventlist',
+
+      properties: {
+        events: {
+          type: Array,
+          notify: true,
+          observer : 'eventsChanged'
+        },
+        favorites: {
+          notify: true,
+          observer: '_handlelist'
+        },
+
+        favsonly : {
+          notify : false,
+          type: Boolean//,
+          //value : true
+        },
+
+        loadingEvents : {
+          notify : false,
+          type: Boolean,
+          value : true
+        },
+
+        days : {
+          notify : false,
+          type: String,
+          value : 'all'
+        },
+        part : {
+          notify : false,
+          type: String,
+          value : 'all'
+        },
+        location : {
+          notify : false,
+          type: String,
+          value : 'all'
+        },
+
+        selectedEvent: {
+          type: Object,
+          value : null
+        },
+
+        filteredEvents: {
+          type: Array,
+          computed : 'filtered(events, favsonly, days, location, part)'
+        },
+
+        filtersApplied : {
+          type : Boolean,
+          computed : 'hasFiltersApplied(favsonly, days, location, part)'
+        }
+      },
+
+
+      hasFiltersApplied : function(favsonly, days, location, part) {
+        return favsonly !== false || days !== 'all' || location !== 'all' || part !== 'all';
+      },
+
+      showInfo : function(e) {
+        this.selectedEvent = e.detail;
+        this.$.dialog.open();
+
+      },
+
+      clearFilters : function() {
+        this.days = 'all';
+        this.part = 'all';
+        this.location = 'all';
+        this.selectedEvent = null;
+        this.favsonly = false;
+      },
+
+
+      eventsChanged : function() {
+        this.loadingEvents = this.events === undefined;
+      },
+
+      _isEmpty : function(e) {
+        return !e || !e.length;
+      },
+
+      _getFavIds : function() {
+        return this.favorites.map(function(each){ return each.id; });
+      },
+
+      locations : function(events) {
+        return (events||[]).reduce(function(locations, each) {
+          return locations.indexOf(each.location.name) === -1 ? locations.concat([each.location.name]) : locations;
+        }, []);
+      },
+
+      filtered : function(events, favsonly, days, location, part) {
+        var $this = this;
+        return events.filter(function(each){
+
+          /*jshint camelcase: false */
+          var date = new Date(each.start_time);
+          
+          if (favsonly && $this._getFavIds().indexOf(each.id) === -1) {
+            return false;
+          }
+
+          if (days !== 'all' && parseInt(days, 10) !== date.getDate()) {
+            return false;
+          }
+
+          if (part !== 'all') {
+
+            if (part === 'morning' && date.getHours() > 12) {
+              return false;
+            } else if (part === 'afternoon' && date.getHours() <= 12) {
+              return false;
+            }
+            
+          }
+
+          if (location !== 'all' && location !== each.location.name) {
+            return false;
+          }
+
+          return true;
+        });
+      },
+
+      _handlelist : function(list) {
+        console.log('handlelist: ' + JSON.stringify(list));
+      },
+
+      idFor : function(id) {
+        return 'event_' + id;
+      }, 
+
+      updateFavorite : function(favorite) {
+        
+        if (favorite.id !== undefined) {
+          var targetId = this.idFor(favorite.id);
+          var favoriteToUpdate = this.$$('#' + targetId);
+          if (favoriteToUpdate !== undefined) {
+            favoriteToUpdate.updateStatus();
+          }
+        }
+      },
+
+      updateFavorites : function() {
+
+        for (var key in this.favorites) {
+          this.updateFavorite(this.favorites[key]);
+        }
+      }
+
+    });
+  })();
+  </script>
+</dom-module>

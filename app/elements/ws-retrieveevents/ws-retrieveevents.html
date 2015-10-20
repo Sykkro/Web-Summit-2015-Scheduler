@@ -1,0 +1,83 @@
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<dom-module id="ws-retrieveevents">
+  <template>
+
+  <template is="dom-if" if="{{cacheEnabled}}">
+        <iron-localstorage name="ws-events-storage"
+      value="{{events}}"
+      on-iron-localstorage-load-empty="loadFromNetwork"
+    ></iron-localstorage>
+  </template>
+
+  <iron-localstorage id="wsConfigStorage" name="ws-config-storage"
+    value="{{config}}"
+    on-iron-localstorage-load-empty="setDefaultConfiguration"
+    on-iron-localstorage-load="configurationLoaded"
+  ></iron-localstorage>
+
+  <iron-ajax auto="{{!cacheEnabled}}" id="remote" url="https://api.cilabs.net/v1/conferences/ws15/timeslots" last-response="{{events}}"></iron-ajax>
+  </template>
+  <script>
+  (function() {
+    'use strict';
+
+    Polymer({
+      is: 'ws-retrieveevents',
+
+      properties: {
+        events: {
+          type: Array,
+          notify: true
+        },
+        config : {
+          type : Object,
+          notify : true
+        },
+
+        cacheEnabled : {
+          type : Boolean,
+          value : true
+        }
+      },
+
+      loadFromNetwork : function() {
+        console.log('loading web summit events');
+        this.$.remote.generateRequest();
+        this.config.lastLoad = new Date();
+        this.$.wsConfigStorage.save();
+      },
+
+      setDefaultConfiguration : function() {
+        //console.log('setting default config');
+        this.config = {
+          lastLoad : new Date()
+        };
+      },
+
+      configurationLoaded : function() {
+        //console.log('config loaded : ' + JSON.stringify(this.config));
+        var now = new Date();
+        var lastLoad = new Date(this.config.lastLoad);
+        var refreshAfter = 5 * 60 * 1000; //5 min
+        //console.log('dif: ' + (now - lastLoad));
+        if(now - lastLoad > refreshAfter || (this.events !== undefined && !this.events.length)) {
+          //console.log('refreshing config');
+          this.loadFromNetwork();
+        } 
+      }
+
+    });
+  })();
+  </script>
+</dom-module>

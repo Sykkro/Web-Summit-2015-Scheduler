@@ -1,0 +1,119 @@
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<dom-module id="ws-eventinfo">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+
+      span, div {
+        color : #444;
+      }
+      .description {
+        margin: 20px 10px 40px;
+        font-size: 115%;
+      }
+
+      .speaker .name {
+        font-weight: 600;
+      }
+      .speaker {
+        margin-bottom: 15px;
+      }
+      .speaker .career {
+        color : #666;
+      }
+
+      .speaker .company {
+        color : #888;
+        font-weight: 500;
+      }
+      .speaker .country {
+        color : #888;
+        font-size: small;
+      }
+
+      .speaker .details {
+        margin-left: 10px;
+      }
+
+      .infolabel {
+        font-weight: 500;
+      }
+
+      .infoarea {
+        margin-top: 15px;
+      }
+      .infocontainer {
+        margin: 5px 10px;
+        color: #666;
+        font-size: small;
+      }
+
+    </style>
+    
+            <div class="description">
+              <span>{{event.description}}</span>
+            </div>
+            
+
+
+            <div class="layout horizontal justified wrap">
+              <template is="dom-repeat" items="{{event.speakers}}">
+              <paper-card class="speaker">
+                <div class="layout horizontal card-content">
+              
+                    <template is="dom-if" if="{{item.avatar_url}}">
+                      <div class="avatar"><iron-image height="80" width="80" sizing="contain" preload src="{{item.avatar_url}}" ></iron-image></div>
+                    </template>
+
+                        <div class="layout vertical details">
+                          <span class="name">{{item.name}}</span>
+                          <span class="career">{{item.career}}</span>
+                          <span class="company">{{item.company}}</span>
+                          <span class="country">{{item.country}}</span>
+                          <!--<span>{{item.bio}}</span>-->
+                     </div>
+                  </div>
+                </paper-card> 
+              </template>
+            </div>
+
+
+            <div class="layout horizontal around-justified wrap infoarea">
+              <div class="infocontainer"><span class="infolabel">Location: </span><span>{{event.location.name}}</span></div>
+              <div class="infocontainer"><span class="infolabel">Start time: </span><span>{{event.start_time}}</span></div>
+              <div class="infocontainer"><span class="infolabel">End time: </span><span>{{event.end_time}}</span></div>
+            </div>
+
+
+
+  </template>
+  <script>
+  (function() {
+    'use strict';
+
+    Polymer({
+      is: 'ws-eventinfo',
+
+      properties: {
+        event: {
+          type: Object,
+          notify: true
+        }
+      }
+    });
+  })();
+  </script>
+</dom-module>
