@@ -11,8 +11,15 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
 <dom-module id="ws-userdata">
-<!--auto-login="true"-->
   <template>
+
+    <iron-localstorage 
+      id="wsFavoritesStorage"
+      name="ws-favorites-storage"
+      on-iron-localstorage-load="_cachedFavoritesLoaded"
+      value="{{cachedFavorites}}">
+    </iron-localstorage>
+
     <firebase-auth 
             id="auth"
             location="{{location}}"
@@ -25,8 +32,22 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           data="{{favorites}}"
           log="{{log}}"
           location="{{userLocation}}"
-          on-firebase-child-removed="test">
+          on-firebase-child-removed="_childRemoved"
+          on-firebase-child-added="_childAdded">
     </firebase-collection>
+
+    <paper-toast id="notifyOff"
+                 duration="6000"
+                 style="z-index: 1000"
+                 text="You are currently working offline, favorites may not be saved.">
+    </paper-toast>
+
+    <paper-toast id="notifyOn"
+                 duration="6000"
+                 style="z-index: 1000"
+                 text="Network available, please manually refresh to update your favorites">
+                <span role="button" style="color: #eeff41;margin: 10px" on-tap="refresh">REFRESH</span>
+    </paper-toast>
 
   </template>
 
@@ -39,7 +60,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
       properties: {
         favorites: {
-          notify: true
+          notify: true,
+          observer : '_favoritesChanged'
         },
         params: {
           type: Object,
@@ -49,13 +71,25 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           notify: true,
           observer: '_userChanged'
         },
-        token: {
-          type: Object,
-          notify: true
-        },
         log: {
           type: Boolean,
-          value: true
+          value: false
+        },
+         cacheEnabled : {
+          type : Boolean,
+          value : true
+        },
+        cachedFavorites : {
+          notify : false,
+          type : Object,
+          value : {
+            user : null,
+            favorites : []
+          }
+        },
+        wasOffline : {
+          type : Boolean,
+          value : false
         }
       },
 
@@ -69,20 +103,96 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
       _userChanged : function(user) {
         //console.log('user changed -> ');
-        //console.log(user);
+        console.log(user);
+
           if (user) {
             this.userLocation = [this.location, 'users', this.user.uid].join('/');
             //console.log('setting user location to :  + this.userLocation);
+          } else {
+            console.log('disconnecting firebase (user logged out)');
+            this.$.collection.disconnect();
           }
+
+
       },
-      test : function(e){
+
+      refresh : function() {
+        location.reload();
+      },
+
+      _cachedFavoritesLoaded : function() {
+        //console.log('cached favs loaded: ' + JSON.stringify(this.cachedFavorites));
+      },
+
+      _favoritesChanged : function(favorites, save) {
+        if (this.cacheEnabled && this.favorites !== undefined && this.user !== undefined && this.user !== null) {
+          
+          var online = this._hostReachable();
+          
+          if (!online && !this.wasOffline) {
+            this.$.notifyOff.show();
+            this.wasOffline = true;
+          } else if (online && this.wasOffline) {
+            this.$.notifyOn.show();
+            this.wasOffline = false;
+          }
+          //console.log('favs notification: ' +e JSON.stringify(favorites));
+
+          //console.log('host reachable: ' + online);
+        
+          if (save === true && online) {
+            //console.log('saving changes');
+             this.cachedFavorites = {
+                user : this.user.uid,
+                favorites : favorites
+              };
+            this.$.wsFavoritesStorage.save();
+          } else if (this.user.uid === this.cachedFavorites.user && !online) {
+              console.log('host is offline and logged user matches cached favorites; overlaping current favorites');
+              this.set('favorites', this.cachedFavorites.favorites);
+          }
+
+
+        }
+      },
+
+      _hostReachable: function() {
+
+        // Handle IE and more capable browsers
+        var xhr = XMLHttpRequest ? new XMLHttpRequest() : new window.ActiveXObject( 'Microsoft.XMLHTTP' );
+
+        // Open new request as a HEAD to the root hostname with a random param to bust the cache
+        xhr.open( 'HEAD', '//' + window.location.hostname + '/?rand=' + Math.floor((1 + Math.random()) * 0x10000), false );
+
+        // Issue request and handle response
+        try {
+          xhr.send();
+          return ( xhr.status >= 200 && (xhr.status < 300 || xhr.status === 304) );
+        } catch (error) {
+          return false;
+        }
+
+      },
+
+      _childAdded : function(){
+        //console.log('child added');
+        this._favoritesChanged(this.favorites, true);
+      },
+
+      _childRemoved : function(e){
         var removed = e.detail.oldChildSnapshot.val();
-        //console.log("removed: " + JSON.stringify(removed));
+        //console.log('child removed: ' + JSON.stringify(removed));
         this.fire('removed', removed);
+        this._favoritesChanged(this.favorites, true);
       },
 
       toggleFavorite : function(favorite) {
-        console.log(this.token);
+
+        if (!this._hostReachable()) {
+          this.$.notifyOff.show();
+          return;
+        }
+
         var existingFavorite = (this.favorites||[]).filter(function(each){return each.id === favorite.id; });
         if (existingFavorite.length > 0) {
           //console.log("removing " + JSON.stringify(favorite));
