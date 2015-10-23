@@ -158,6 +158,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
       _hostReachable: function() {
 
+        // Skip local checks
+        if (window.location.hostname === 'localhost') {
+          return true;
+        }
+
         // Handle IE and more capable browsers
         var xhr = XMLHttpRequest ? new XMLHttpRequest() : new window.ActiveXObject( 'Microsoft.XMLHTTP' );
 

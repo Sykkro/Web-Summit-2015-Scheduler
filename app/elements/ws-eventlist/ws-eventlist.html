@@ -22,6 +22,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       }
 
       .filters > div {
+        margin-top: 20px;
         margin-left: 15px;
         margin-right: 15px;
       }
@@ -37,71 +38,99 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         margin-top: 20px;
       }
 
+      .clearButton {
+        margin-left: 15px;
+      }
+
     </style>
 
 
         <!-- Filters -->
-        <div class="wrap layout horizontal end filters">
+        <div class="layout vertical filters">
 
+
+          <!-- search bar and clear filters -->
+          <div class="wrap horizontal layout end">
+            
+            <!-- Query filter -->
+            <div class="flex">
+              <paper-input label="Search" type="search" placeholder="search for events by title, description or location" value="{{query}}"></paper-input>
+            </div>
+
+            <!-- Clear filters -->
+            <template is="dom-if" if="{{filtersApplied}}">
+              <div>
+                <paper-button class="clearButton" raised on-tap="clearFilters">
+                <iron-icon icon="clear"></iron-icon> Remove filters
+                </paper-button>
+              </div>
+            </template>
+
+          </div>
+
+
+
+
+          <!-- Date, favorite and location filters -->
+          <div class="wrap horizontal layout end justified">
+              
+            <!-- Favs only filter -->
+            <div class="favs">
+              <paper-toggle-button checked="{{favsonly}}">
+                <span>Only favorites</span>
+              </paper-toggle-button>
+            </div>
+
+
+                <!-- Days filter -->
+              <div>
+              <paper-dropdown-menu>
+                <paper-menu attr-for-selected="value" selected="{{days}}" class="dropdown-content">
+                  <paper-item value="all">All days</paper-item>
+                  <paper-item value="3">Nov. 3rd</paper-item>
+                  <paper-item value="4">Nov. 4th</paper-item>
+                  <paper-item value="5">Nov. 5th</paper-item>
+                </paper-menu>
+              </paper-dropdown-menu>
+              </div>
+
+              <!-- Part filter -->
+              <div>
+              <paper-dropdown-menu>
+                <paper-menu attr-for-selected="value" selected="{{part}}" class="dropdown-content">
+                  <paper-item value="all">All day</paper-item>
+                  <paper-item value="morning">Morning</paper-item>
+                  <paper-item value="afternoon">Afternoon</paper-item>
+                </paper-menu>
+              </paper-dropdown-menu>
+              </div>
+
+
+            <!-- Location filter -->
+            <div>
+            <paper-dropdown-menu>
+              <paper-menu attr-for-selected="value" selected="{{location}}" class="dropdown-content">
+                <paper-item value="all">All locations</paper-item>
+                <template is="dom-repeat" items="{{locations(events)}}">
+                  <paper-item value="{{item}}">{{item}}</paper-item>
+                </template>
+              </paper-menu>
+            </paper-dropdown-menu>
+            </div>
+
+          </div>
 
           
 
         <!--<div class="flex">
         <h3 class="right">Events to display:</h3>
         </div>-->
+
+
+          <!--<div class="flex"></div>-->
+
+
           
-          <!-- Favs only filter -->
-          <div class="favs">
-          <paper-toggle-button checked="{{favsonly}}">
-            <span>Only favorites</span>
-          </paper-toggle-button>
-          </div>
-
-          <!-- Days filter -->
-          <div>
-          <paper-dropdown-menu>
-            <paper-menu attr-for-selected="value" selected="{{days}}" class="dropdown-content">
-              <paper-item value="all">All days</paper-item>
-              <paper-item value="3">Nov. 3rd</paper-item>
-              <paper-item value="4">Nov. 4th</paper-item>
-              <paper-item value="5">Nov. 5th</paper-item>
-            </paper-menu>
-          </paper-dropdown-menu>
-          </div>
-
-          <!-- Part filter -->
-          <div>
-          <paper-dropdown-menu>
-            <paper-menu attr-for-selected="value" selected="{{part}}" class="dropdown-content">
-              <paper-item value="all">All day</paper-item>
-              <paper-item value="morning">Morning</paper-item>
-              <paper-item value="afternoon">Afternoon</paper-item>
-            </paper-menu>
-          </paper-dropdown-menu>
-          </div>
-
-          <!-- Location filter -->
-          <div>
-          <paper-dropdown-menu>
-            <paper-menu attr-for-selected="value" selected="{{location}}" class="dropdown-content">
-              <paper-item value="all">All locations</paper-item>
-              <template is="dom-repeat" items="{{locations(events)}}">
-                <paper-item value="{{item}}">{{item}}</paper-item>
-              </template>
-            </paper-menu>
-          </paper-dropdown-menu>
-          </div>
-
-
-          <div class="flex"></div>
-          <!-- Clear filters -->
-          <template is="dom-if" if="{{filtersApplied}}">
-            <div>
-              <paper-button raised on-tap="clearFilters">
-              <iron-icon icon="clear"></iron-icon> Remove filters
-              </paper-button>
-            </div>
-          </template>
 
         </div>
 
@@ -198,6 +227,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           value : 'all'
         },
 
+        query : {
+          notify : false,
+          type : String,
+          value : ''
+        },
+
         selectedEvent: {
           type: Object,
           value : null
@@ -205,18 +240,18 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
         filteredEvents: {
           type: Array,
-          computed : 'filtered(events, favsonly, days, location, part)'
+          computed : 'filtered(events, favsonly, days, location, part, query)'
         },
 
         filtersApplied : {
           type : Boolean,
-          computed : 'hasFiltersApplied(favsonly, days, location, part)'
+          computed : 'hasFiltersApplied(favsonly, days, location, part, query)'
         }
       },
 
 
-      hasFiltersApplied : function(favsonly, days, location, part) {
-        return favsonly !== false || days !== 'all' || location !== 'all' || part !== 'all';
+      hasFiltersApplied : function(favsonly, days, location, part, query) {
+        return favsonly !== false || days !== 'all' || location !== 'all' || part !== 'all' || query !== '';
       },
 
       showInfo : function(e) {
@@ -231,6 +266,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         this.location = 'all';
         this.selectedEvent = null;
         this.favsonly = false;
+        this.query = '';
       },
 
 
@@ -252,7 +288,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         }, []);
       },
 
-      filtered : function(events, favsonly, days, location, part) {
+      filtered : function(events, favsonly, days, location, part, query) {
         var $this = this;
         return events.filter(function(each){
 
@@ -279,6 +315,21 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
           if (location !== 'all' && location !== each.location.name) {
             return false;
+          }
+
+          if (query !== '' && query !== undefined && query !== null) {
+
+            var terms = query.trim().toLowerCase().split(/\s+/);
+
+            var matched = terms.every(function(term){
+                return [each.title, each.description, each.location.name].some(function(text){
+                  return text !== null && text.toLowerCase().indexOf(term) !== -1;
+                });
+            });
+
+            if (!matched) {
+              return false;
+            }
           }
 
           return true;
